@@ -49,6 +49,7 @@ defmodule Hulaaki.Client do
           state
           |> Map.put(:keep_alive_interval, nil)
           |> Map.put(:keep_alive_ref, nil)
+          |> Map.put(:packet_id, 1)
         {:ok, state}
       end
 
@@ -91,13 +92,14 @@ defmodule Hulaaki.Client do
         qos    = opts |> Keyword.fetch!(:qos)
         retain = opts |> Keyword.fetch!(:retain)
 
-        message =
+        {message, state} =
           case qos do
             0 ->
-              Message.publish(topic, msg, dup, qos, retain)
+              {Message.publish(topic, msg, dup, qos, retain), state}
             _ ->
-              id = opts |> Keyword.fetch!(:id)
-              Message.publish(id, topic, msg, dup, qos, retain)
+              id = state.packet_id
+              state = update_packet_id(state)
+              {Message.publish(id, topic, msg, dup, qos, retain), state}
           end
 
         :ok = state.connection |> Connection.publish(message)
@@ -105,23 +107,25 @@ defmodule Hulaaki.Client do
       end
 
       def handle_call({:subscribe, opts}, _from, state) do
-        id     = opts |> Keyword.fetch!(:id)
+        id     = state.packet_id
         topics = opts |> Keyword.fetch!(:topics)
         qoses  = opts |> Keyword.fetch!(:qoses)
 
         message = Message.subscribe(id, topics, qoses)
 
         :ok = state.connection |> Connection.subscribe(message)
+        state = update_packet_id(state)
         {:reply, :ok, state}
       end
 
       def handle_call({:unsubscribe, opts}, _from, state) do
-        id     = opts |> Keyword.fetch!(:id)
+        id     = state.packet_id
         topics = opts |> Keyword.fetch!(:topics)
 
         message = Message.unsubscribe(id, topics)
 
         :ok = state.connection |> Connection.unsubscribe(message)
+        state = update_packet_id(state)
         {:reply, :ok, state}
       end
 
@@ -251,6 +255,13 @@ defmodule Hulaaki.Client do
         keep_alive_ref = Process.send_after(self, {:keep_alive}, keep_alive_interval)
         %{state | keep_alive_ref: keep_alive_ref}
       end       
+
+      defp update_packet_id(%{packet_id: 65_535} = state) do
+        %{state | packet_id: 1}
+      end 
+      defp update_packet_id(%{packet_id: packet_id} = state) do
+        %{state | packet_id: (packet_id + 1)}
+      end 
 
       ## Overrideable callbacks
 
