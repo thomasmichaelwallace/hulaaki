@@ -50,6 +50,8 @@ defmodule Hulaaki.Client do
           |> Map.put(:keep_alive_interval, nil)
           |> Map.put(:keep_alive_ref, nil)
           |> Map.put(:packet_id, 1)
+          |> Map.put(:pong_timeout, nil)
+          |> Map.put(:pong_timeout_ref, nil)
         {:ok, state}
       end
 
@@ -63,6 +65,7 @@ defmodule Hulaaki.Client do
         host          = opts |> Keyword.fetch!(:host)
         port          = opts |> Keyword.fetch!(:port)
         timeout       = opts |> Keyword.get(:timeout, 100)
+        ssl           = opts |> Keyword.get(:ssl, nil)
 
         client_id     = opts |> Keyword.fetch!(:client_id)
         username      = opts |> Keyword.get(:username, "")
@@ -72,7 +75,8 @@ defmodule Hulaaki.Client do
         will_qos      = opts |> Keyword.get(:will_qos, 0)
         will_retain   = opts |> Keyword.get(:will_retain, 0)
         clean_session = opts |> Keyword.get(:clean_session, 1)
-        keep_alive    = opts |> Keyword.get(:keep_alive, 100)
+        keep_alive    = opts |> Keyword.get(:keep_alive, 10)
+        pong_timeout  = opts |> Keyword.get(:pong_timeout, timeout)
 
         message = Message.connect(client_id, username, password,
                                   will_topic, will_message, will_qos,
@@ -80,10 +84,10 @@ defmodule Hulaaki.Client do
 
         state = Map.merge(%{connection: conn_pid}, state)
 
-        connect_opts = [host: host, port: port, timeout: timeout]
+        connect_opts = [host: host, port: port, timeout: timeout, ssl: ssl]
 
         case state.connection |> Connection.connect(message, connect_opts) do
-          :ok -> {:reply, :ok, %{state | keep_alive_interval: keep_alive * 1000}}
+          :ok -> {:reply, :ok, %{state | keep_alive_interval: keep_alive * 1000, pong_timeout: pong_timeout}}
           {:error, reason} -> {:reply, {:error, reason}, state}
         end
       end
@@ -230,11 +234,13 @@ defmodule Hulaaki.Client do
       def handle_info({:sent, %Message.PingReq{} = message}, state) do
         state = update_keep_alive_timer(state)
         on_ping [message: message, state: state]
+        state = update_pong_timer(state)
         {:noreply, state}
       end
 
       def handle_info({:received, %Message.PingResp{} = message}, state) do
         on_pong [message: message, state: state]
+        state = cancel_pong_timer(state)
         {:noreply, state}
       end
 
@@ -244,13 +250,18 @@ defmodule Hulaaki.Client do
         {:noreply, state}
       end
 
-      def handle_info(:closed, state) do
+      def handle_info({:closed}, state) do
         on_closed [message: nil, state: state]
         {:noreply, state}
       end
 
       def handle_info({:keep_alive}, state) do
         :ok = state.connection |> Connection.ping
+        {:noreply, state}
+      end
+
+      def handle_info({:pong_timeout}, state) do
+        on_pong_timeout [message: nil, state: state]
         {:noreply, state}
       end
 
@@ -262,6 +273,22 @@ defmodule Hulaaki.Client do
 
         keep_alive_ref = Process.send_after(self, {:keep_alive}, keep_alive_interval)
         %{state | keep_alive_ref: keep_alive_ref}
+      end
+
+      defp update_pong_timer(%{pong_timeout: pong_timeout, pong_timeout_ref: pong_timeout_ref} = state) do
+        if pong_timeout_ref do
+          Process.cancel_timer(pong_timeout_ref)
+        end
+
+        pong_timeout_ref = Process.send_after(self, {:pong_timeout}, pong_timeout)
+        %{state | pong_timeout_ref: pong_timeout_ref}
+      end
+
+      defp cancel_pong_timer(%{pong_timeout_ref: pong_timeout_ref} = state) do
+        if pong_timeout_ref do
+          Process.cancel_timer(pong_timeout_ref)
+        end
+        %{state | pong_timeout_ref: nil}
       end
 
       defp update_packet_id(%{packet_id: 65_535} = state) do
@@ -290,6 +317,7 @@ defmodule Hulaaki.Client do
       def on_pong([message: message, state: state]), do: true
       def on_disconnect([message: message, state: state]), do: true
       def on_closed([message: message, state: state]), do: true
+      def on_pong_timeout([message: message, state: state]), do: true
 
       defoverridable [on_connect: 1, on_connect_ack: 1,
                       on_publish: 1, on_publish_ack: 1,
@@ -298,7 +326,7 @@ defmodule Hulaaki.Client do
                       on_subscribe: 1, on_subscribe_ack: 1,
                       on_unsubscribe: 1, on_unsubscribe_ack: 1,
                       on_subscribed_publish: 1, on_subscribed_publish_ack: 1,
-                      on_ping: 1, on_pong: 1,
+                      on_ping: 1, on_pong: 1, on_pong_timeout: 1,
                       on_disconnect: 1, on_closed: 1]
     end
   end

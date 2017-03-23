@@ -123,13 +123,13 @@ defmodule Hulaaki.Connection do
 
   @doc false
   def handle_info({:tcp_closed, _socket}, state) do
-    Kernel.send state.client, :closed
+    Kernel.send state.client, {:closed}
     {:stop, :shutdown, state}
   end
 
   @doc false
   def handle_info({:ssl_closed, _socket}, state) do
-    Kernel.send state.client, :closed
+    Kernel.send state.client, {:closed}
     {:stop, :shutdown, state}
   end
 
@@ -142,11 +142,9 @@ defmodule Hulaaki.Connection do
 
     tcp_opts    = [:binary, {:active, :once}, {:packet, :raw}]
     {transport, socket_opts} =
-      case opts |> Keyword.fetch(:ssl) do
-        {:ok, ssl_opts} ->
-          {:ssl, tcp_opts ++ ssl_opts}
-        :error ->
-          {:gen_tcp, tcp_opts}
+      case opts |> Keyword.fetch!(:ssl) do
+        nil -> {:gen_tcp, tcp_opts}
+        ssl_opts -> {:ssl, tcp_opts ++ ssl_opts}
       end
 
     case transport.connect(host, port, socket_opts, timeout) do
