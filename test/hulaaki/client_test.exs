@@ -81,7 +81,7 @@ defmodule Hulaaki.ClientTest do
 
   defp pre_connect(pid) do
     options = [client_id: "some-name", host: TestConfig.mqtt_host, port: TestConfig.mqtt_port, timeout: 200]
-    {:ok, _} = SampleClient.connect(pid, options)
+    SampleClient.connect(pid, options)
   end
 
   defp post_disconnect(pid) do
@@ -284,12 +284,6 @@ defmodule Hulaaki.ClientTest do
     assert_receive {:subscribed_publish_ack, %Message.PubAck{}}
 
     post_disconnect pid
-  end
-
-  test "on_closed callback on connection closed", %{client_pid: pid} do
-    pre_connect pid
-    post_disconnect pid
-    assert_receive {:closed, nil}
   end
 
 end
