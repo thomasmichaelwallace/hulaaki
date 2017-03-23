@@ -68,6 +68,10 @@ defmodule Hulaaki.ClientTest do
     def on_disconnect(message: message, state: state) do
       Kernel.send state.parent, {:disconnect, message}
     end
+
+    def on_closed(message: message, state: state) do
+      Kernel.send state.parent, {:closed, message}
+    end
   end
 
   setup do
@@ -280,6 +284,12 @@ defmodule Hulaaki.ClientTest do
     assert_receive {:subscribed_publish_ack, %Message.PubAck{}}
 
     post_disconnect pid
+  end
+
+  test "on_closed callback on connection closed", %{client_pid: pid} do
+    pre_connect pid
+    post_disconnect pid
+    assert_receive {:closed, nil}
   end
 
 end

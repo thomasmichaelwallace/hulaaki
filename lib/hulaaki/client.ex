@@ -45,7 +45,7 @@ defmodule Hulaaki.Client do
       ## GenServer callbacks
 
       def init(%{} = state) do
-        state = 
+        state =
           state
           |> Map.put(:keep_alive_interval, nil)
           |> Map.put(:keep_alive_ref, nil)
@@ -244,27 +244,32 @@ defmodule Hulaaki.Client do
         {:noreply, state}
       end
 
+      def handle_info(:closed, state) do
+        on_closed [message: nil, state: state]
+        {:noreply, state}
+      end
+
       def handle_info({:keep_alive}, state) do
         :ok = state.connection |> Connection.ping
         {:noreply, state}
-      end 
+      end
 
       ## Private functions
-      defp update_keep_alive_timer(%{keep_alive_interval: keep_alive_interval, keep_alive_ref: keep_alive_ref} = state) do 
-        if keep_alive_ref do 
+      defp update_keep_alive_timer(%{keep_alive_interval: keep_alive_interval, keep_alive_ref: keep_alive_ref} = state) do
+        if keep_alive_ref do
           Process.cancel_timer(keep_alive_ref)
         end
 
         keep_alive_ref = Process.send_after(self, {:keep_alive}, keep_alive_interval)
         %{state | keep_alive_ref: keep_alive_ref}
-      end       
+      end
 
       defp update_packet_id(%{packet_id: 65_535} = state) do
         %{state | packet_id: 1}
-      end 
+      end
       defp update_packet_id(%{packet_id: packet_id} = state) do
         %{state | packet_id: (packet_id + 1)}
-      end 
+      end
 
       ## Overrideable callbacks
 
@@ -284,6 +289,7 @@ defmodule Hulaaki.Client do
       def on_ping([message: message, state: state]), do: true
       def on_pong([message: message, state: state]), do: true
       def on_disconnect([message: message, state: state]), do: true
+      def on_closed([message: message, state: state]), do: true
 
       defoverridable [on_connect: 1, on_connect_ack: 1,
                       on_publish: 1, on_publish_ack: 1,
@@ -292,8 +298,8 @@ defmodule Hulaaki.Client do
                       on_subscribe: 1, on_subscribe_ack: 1,
                       on_unsubscribe: 1, on_unsubscribe_ack: 1,
                       on_subscribed_publish: 1, on_subscribed_publish_ack: 1,
-                      on_ping: 1,    on_pong: 1,
-                      on_disconnect: 1]
+                      on_ping: 1, on_pong: 1,
+                      on_disconnect: 1, on_closed: 1]
     end
   end
 end

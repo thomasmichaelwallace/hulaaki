@@ -123,13 +123,13 @@ defmodule Hulaaki.Connection do
 
   @doc false
   def handle_info({:tcp_closed, _socket}, state) do
-    Kernel.send state.client, {:closed}
+    Kernel.send state.client, :closed
     {:stop, :shutdown, state}
   end
 
   @doc false
   def handle_info({:ssl_closed, _socket}, state) do
-    Kernel.send state.client, {:closed}
+    Kernel.send state.client, :closed
     {:stop, :shutdown, state}
   end
 
