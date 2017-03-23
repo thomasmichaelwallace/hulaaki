@@ -77,7 +77,7 @@ defmodule Hulaaki.ClientTest do
 
   defp pre_connect(pid) do
     options = [client_id: "some-name", host: TestConfig.mqtt_host, port: TestConfig.mqtt_port, timeout: 200]
-    SampleClient.connect(pid, options)
+    {:ok, _} = SampleClient.connect(pid, options)
   end
 
   defp post_disconnect(pid) do
