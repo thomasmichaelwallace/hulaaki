@@ -13,7 +13,7 @@ defmodule Hulaaki.Connection do
   """
   def start_link(client_pid)
   when is_pid(client_pid) do
-    GenServer.start_link(__MODULE__, %{client: client_pid, socket: nil})
+    GenServer.start_link(__MODULE__, %{client: client_pid, socket: nil, transport: nil})
   end
 
   @doc """
