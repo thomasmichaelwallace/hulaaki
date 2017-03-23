@@ -156,7 +156,7 @@ defmodule Hulaaki.Connection do
     end
   end
 
-  defp dispatch_message(socket, transport, message) do
+  defp dispatch_message(transport, socket, message) do
     packet = Packet.encode(message)
     socket |> active_once(transport) |> transport.send(packet)
   end
