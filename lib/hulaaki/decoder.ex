@@ -49,13 +49,13 @@ defmodule Hulaaki.Decoder do
       length = accumulator + decodedValue
 
       if remaining_bytes?.(encodedValue) do
-        if byte_size(rest) > 0 do 
+        if byte_size(rest) > 0 do
           decode_remaining_length(rest, length, multiplier * 128)
         else
           {:error, {length, ""}}
-        end          
+        end
       else
-        if byte_size(rest) >= length do 
+        if byte_size(rest) >= length do
           {:ok, {length, rest}}
         else
           {:error, {length, rest}}
@@ -63,8 +63,12 @@ defmodule Hulaaki.Decoder do
       end
   end
 
+  defp decode_remaining_length(_, _, _) do
+    {:error, :bad_decode}
+  end
+
   defp decode_connect(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {length, from_third_byte}} ->
         <<message_bytes::bytes-size(length), remainder::binary>> = from_third_byte
 
@@ -95,7 +99,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_connect_ack(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {2, from_third_byte}} ->
         <<message_bytes::bytes-size(2), remainder::binary>> = from_third_byte
 
@@ -112,7 +116,7 @@ defmodule Hulaaki.Decoder do
   defp decode_publish(<<3::size(4), dup::size(1),
                       qos::size(2), retain::size(1),
                       from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {length, from_third_byte}} ->
         <<message_bytes::bytes-size(length), remainder::binary>> = from_third_byte
 
@@ -140,7 +144,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_publish_ack(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {2, from_third_byte}} ->
         <<message_bytes::bytes-size(2), remainder::binary>> = from_third_byte
 
@@ -155,7 +159,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_publish_release(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {2, from_third_byte}} ->
         <<message_bytes::bytes-size(2), remainder::binary>> = from_third_byte
 
@@ -170,7 +174,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_publish_receive(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {2, from_third_byte}} ->
         <<message_bytes::bytes-size(2), remainder::binary>> = from_third_byte
 
@@ -185,7 +189,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_publish_complete(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {2, from_third_byte}} ->
       <<message_bytes::bytes-size(2), remainder::binary>> = from_third_byte
 
@@ -200,7 +204,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_subscribe(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {length, from_third_byte}} ->
       <<message_bytes::bytes-size(length), remainder::binary>> = from_third_byte
 
@@ -235,7 +239,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_subscribe_ack(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {length, from_third_byte}} ->
         <<message_bytes::bytes-size(length), remainder::binary>> = from_third_byte
 
@@ -266,7 +270,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_unsubscribe(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {length, from_third_byte}} ->
         <<message_bytes::bytes-size(length), remainder::binary>> = from_third_byte
 
@@ -299,7 +303,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_unsubscribe_ack(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {2, from_third_byte}} ->
         <<message_bytes::bytes-size(2), remainder::binary>> = from_third_byte
 
@@ -314,7 +318,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_ping_request(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {0, from_third_byte}} ->
         <<_::bytes-size(0), remainder::binary>> = from_third_byte
 
@@ -327,7 +331,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_ping_response(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {0, from_third_byte}} ->
         <<_::bytes-size(0), remainder::binary>> = from_third_byte
 
@@ -340,7 +344,7 @@ defmodule Hulaaki.Decoder do
   end
 
   defp decode_disconnect(<<_, from_second_byte::binary>> = payload_bytes) do
-    case decode_remaining_length(from_second_byte) do 
+    case decode_remaining_length(from_second_byte) do
       {:ok, {0, from_third_byte}} ->
         <<_::bytes-size(0), remainder::binary>> = from_third_byte
 
