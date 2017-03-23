@@ -81,8 +81,11 @@ defmodule Hulaaki.Client do
         state = Map.merge(%{connection: conn_pid}, state)
 
         connect_opts = [host: host, port: port, timeout: timeout]
-        :ok = state.connection |> Connection.connect(message, connect_opts)
-        {:reply, :ok, %{state | keep_alive_interval: keep_alive * 1000}}
+
+        case state.connection |> Connection.connect(message, connect_opts) do
+          :ok -> {:reply, :ok, %{state | keep_alive_interval: keep_alive * 1000}}
+          {:error, reason} -> {:reply, {:error, reason}, state}
+        end
       end
 
       def handle_call({:publish, opts}, _from, state) do
