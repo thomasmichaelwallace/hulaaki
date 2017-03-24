@@ -10,11 +10,11 @@ defmodule Hulaaki.Mixfile do
      elixir: "~> 1.2",
      source_url: "https://github.com/suvash/hulaaki",
      homepage_url: "https://github.com/suvash/hulaaki",
-     deps: deps,
+     deps: deps(),
      docs: &docs/0,
 
-     description: description,
-     package: package,
+     description: description(),
+     package: package(),
 
      test_coverage: [tool: ExCoveralls]
     ]
