@@ -173,6 +173,7 @@ defmodule Hulaaki.Client do
             :ok = state.connection |> Connection.publish_ack(message)
           _ ->
             # unsure about supporting qos 2 yet
+            :ok
         end
 
         {:noreply, state}
