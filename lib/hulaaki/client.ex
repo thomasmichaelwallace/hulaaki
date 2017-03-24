@@ -271,7 +271,7 @@ defmodule Hulaaki.Client do
           Process.cancel_timer(keep_alive_ref)
         end
 
-        keep_alive_ref = Process.send_after(self, {:keep_alive}, keep_alive_interval)
+        keep_alive_ref = Process.send_after(self(), {:keep_alive}, keep_alive_interval)
         %{state | keep_alive_ref: keep_alive_ref}
       end
 
@@ -280,7 +280,7 @@ defmodule Hulaaki.Client do
           Process.cancel_timer(pong_timeout_ref)
         end
 
-        pong_timeout_ref = Process.send_after(self, {:pong_timeout}, pong_timeout)
+        pong_timeout_ref = Process.send_after(self(), {:pong_timeout}, pong_timeout)
         %{state | pong_timeout_ref: pong_timeout_ref}
       end
 
