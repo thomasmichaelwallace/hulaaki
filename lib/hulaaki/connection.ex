@@ -144,6 +144,8 @@ defmodule Hulaaki.Connection do
     {transport, socket_opts} =
       case opts |> Keyword.fetch!(:ssl) do
         nil -> {:gen_tcp, tcp_opts}
+        false -> {:gen_tcp, tcp_opts}
+        true -> {:ssl, tcp_opts}
         ssl_opts -> {:ssl, tcp_opts ++ ssl_opts}
       end
 
